@@ -37,12 +37,21 @@ class TeleportCompass @Inject constructor(private val logger: Logger) {
 
     @Listener
     fun onRightClickBlock(event: InteractBlockEvent.Secondary, @First player: Player) {
-        if (itemInHand(player, ItemTypes.COMPASS) && event.targetBlock.location.isPresent) {
+        if (!player.hasPermission(TELEPORT_PERMISSION)) {
+            player.sendMessage(PERMISSION_DENIED)
+            return
+        }
+        if (itemInHand(player, ItemTypes.COMPASS)
+                && event.targetBlock.location.isPresent) {
             teleportOnTopOfBlocks(player, event.targetBlock.location.get())
         }
     }
 
     companion object {
+
+        const val TELEPORT_PERMISSION = "teleportcompass.use"
+        val PERMISSION_DENIED = Text.of(TextColors.RED, "You don't have permission to teleport!")
+
         /**
          * Uses [BlockRay] to teleport the [player] in the direction he is looking at. [teleportLimit] limits how far the
          * player can be teleported at most.

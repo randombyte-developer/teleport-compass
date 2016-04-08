@@ -13,6 +13,10 @@ public class ExcludedListenerJava {
     @Listener
     @Exclude(InteractBlockEvent.class)
     public void onRightClickAir(InteractEvent event, @First Player player) {
+        if (!player.hasPermission(TeleportCompass.TELEPORT_PERMISSION)) {
+            player.sendMessage(TeleportCompass.Companion.getPERMISSION_DENIED());
+            return;
+        }
         if (TeleportCompass.Companion.itemInHand(player, ItemTypes.COMPASS)) {
             TeleportCompass.Companion.teleportInDirection(player, 100);
         }
