@@ -18,13 +18,14 @@ import org.spongepowered.api.util.blockray.BlockRay
 import org.spongepowered.api.world.Location
 import org.spongepowered.api.world.World
 
-@Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, authors = arrayOf(PluginInfo.AUTHOR))
+@Plugin(id = TeleportCompass.ID, name = TeleportCompass.NAME, version = TeleportCompass.VERSION,
+        authors = arrayOf(TeleportCompass.AUTHOR))
 class TeleportCompass @Inject constructor(private val logger: Logger) {
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
         Sponge.getEventManager().registerListeners(this, ExcludedListenerJava())
-        logger.info("${PluginInfo.NAME} loaded: ${PluginInfo.ID}!")
+        logger.info("${TeleportCompass.NAME} loaded: ${TeleportCompass.ID}!")
     }
 
 /*    @Listener
@@ -48,6 +49,11 @@ class TeleportCompass @Inject constructor(private val logger: Logger) {
     }
 
     companion object {
+
+        const val NAME = "TeleportCompass"
+        const val ID = "de.randombyte.teleportcompass"
+        const val VERSION = "v0.1.1"
+        const val AUTHOR = "RandomByte"
 
         const val TELEPORT_PERMISSION = "teleportcompass.use"
         val PERMISSION_DENIED = Text.of(TextColors.RED, "You don't have permission to teleport!")
