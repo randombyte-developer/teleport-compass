@@ -49,7 +49,7 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
             .build(), "teleportCompass")
 
         loadConfig()
-        logger.info("${TeleportCompass.NAME} loaded: ${TeleportCompass.ID}!")
+        logger.info("$NAME loaded: $ID!")
     }
 
     fun loadConfig() {
@@ -63,15 +63,14 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
     @Listener
     @Exclude(InteractBlockEvent::class) //Seems not to work: https://github.com/SpongePowered/SpongeCommon/issues/643
     fun onRightClickAir(event: InteractEvent, @First player: Player) {
-        if (TeleportCompass.itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)) {
-            TeleportCompass.teleportInDirection(player, maxTeleportDistance)
+        if (itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)) {
+            teleportInDirection(player, maxTeleportDistance)
         }
     }
 
     @Listener
     fun onRightClickBlock(event: InteractBlockEvent.Secondary, @First player: Player) {
-        if (TeleportCompass.itemInHand(player, ItemTypes.COMPASS) && event.targetBlock.location.isPresent
-                && testTeleportPermission(player)) {
+        if (itemInHand(player, ItemTypes.COMPASS) && event.targetBlock.location.isPresent && testTeleportPermission(player)) {
             teleportOnTopOfBlocks(player, event.targetBlock.location.get())
         }
     }
