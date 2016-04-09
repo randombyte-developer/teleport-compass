@@ -49,7 +49,7 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
             .build(), "teleportCompass")
 
         loadConfig()
-        logger.info("$NAME loaded: $ID!")
+        logger.info("$NAME loaded: $VERSION!")
     }
 
     fun loadConfig() {
