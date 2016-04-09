@@ -4,7 +4,10 @@ import com.google.inject.Inject
 import ninja.leaping.configurate.commented.CommentedConfigurationNode
 import ninja.leaping.configurate.loader.ConfigurationLoader
 import org.slf4j.Logger
+import org.spongepowered.api.Sponge
 import org.spongepowered.api.block.BlockTypes
+import org.spongepowered.api.command.CommandResult
+import org.spongepowered.api.command.spec.CommandSpec
 import org.spongepowered.api.config.DefaultConfig
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
@@ -34,6 +37,17 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+            .child(CommandSpec.builder()
+                .executor { src, ctx ->
+                    loadConfig()
+                    src.sendMessage(Text.of(TextColors.GREEN, "TeleportCompass config reloaded!"))
+                    CommandResult.success()
+                }
+                .description(Text.of("Reloads the config"))
+                .build(), "reload")
+            .build(), "teleportCompass")
+
         loadConfig()
         logger.info("${TeleportCompass.NAME} loaded: ${TeleportCompass.ID}!")
     }
@@ -50,7 +64,7 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
     @Exclude(InteractBlockEvent::class) //Seems not to work: https://github.com/SpongePowered/SpongeCommon/issues/643
     fun onRightClickAir(event: InteractEvent, @First player: Player) {
         if (TeleportCompass.itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)) {
-            TeleportCompass.teleportInDirection(player, 100)
+            TeleportCompass.teleportInDirection(player, maxTeleportDistance)
         }
     }
 
