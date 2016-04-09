@@ -1,8 +1,11 @@
 package de.randombyte.teleportcompass
 
 import com.google.inject.Inject
+import ninja.leaping.configurate.commented.CommentedConfigurationNode
+import ninja.leaping.configurate.loader.ConfigurationLoader
 import org.slf4j.Logger
 import org.spongepowered.api.block.BlockTypes
+import org.spongepowered.api.config.DefaultConfig
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.action.InteractEvent
@@ -21,11 +24,26 @@ import org.spongepowered.api.world.World
 
 @Plugin(id = TeleportCompass.ID, name = TeleportCompass.NAME, version = TeleportCompass.VERSION,
         authors = arrayOf(TeleportCompass.AUTHOR))
-class TeleportCompass @Inject constructor(private val logger: Logger) {
+class TeleportCompass @Inject constructor(val logger: Logger) {
+
+    @Inject
+    @DefaultConfig(sharedRoot = true)
+    lateinit var configLoader: ConfigurationLoader<CommentedConfigurationNode>
+
+    var maxTeleportDistance = 100
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
+        loadConfig()
         logger.info("${TeleportCompass.NAME} loaded: ${TeleportCompass.ID}!")
+    }
+
+    fun loadConfig() {
+        val rootNode = configLoader.load()
+        val maxDistanceNode = rootNode.getNode("maxTeleportDistance")
+        if (maxDistanceNode.isVirtual) maxDistanceNode.value = DEFAULT_MAX_TELEPORT_DISTANCE
+        maxTeleportDistance = maxDistanceNode.int
+        configLoader.save(rootNode)
     }
 
     @Listener
@@ -51,8 +69,10 @@ class TeleportCompass @Inject constructor(private val logger: Logger) {
         const val VERSION = "v0.1.1"
         const val AUTHOR = "RandomByte"
 
-        const val TELEPORT_PERMISSION = "teleportcompass.use"
+        val TELEPORT_PERMISSION = "teleportcompass.use"
         val PERMISSION_DENIED = Text.of(TextColors.RED, "You don't have permission to teleport!")
+
+        val DEFAULT_MAX_TELEPORT_DISTANCE = 100
 
         /**
          * Uses [BlockRay] to teleport the [player] in the direction he is looking at. [teleportLimit] limits how far the
