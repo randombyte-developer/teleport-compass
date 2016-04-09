@@ -2,12 +2,13 @@ package de.randombyte.teleportcompass
 
 import com.google.inject.Inject
 import org.slf4j.Logger
-import org.spongepowered.api.Sponge
 import org.spongepowered.api.block.BlockTypes
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
+import org.spongepowered.api.event.action.InteractEvent
 import org.spongepowered.api.event.block.InteractBlockEvent
 import org.spongepowered.api.event.filter.cause.First
+import org.spongepowered.api.event.filter.type.Exclude
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.item.ItemType
 import org.spongepowered.api.item.ItemTypes
@@ -24,26 +25,21 @@ class TeleportCompass @Inject constructor(private val logger: Logger) {
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
-        Sponge.getEventManager().registerListeners(this, ExcludedListenerJava())
         logger.info("${TeleportCompass.NAME} loaded: ${TeleportCompass.ID}!")
     }
 
-/*    @Listener
-    @Exclude(InteractBlockEvent.Primary::class, InteractBlockEvent.Secondary::class)
+    @Listener
+    @Exclude(InteractBlockEvent::class) //Seems not to work: https://github.com/SpongePowered/SpongeCommon/issues/643
     fun onRightClickAir(event: InteractEvent, @First player: Player) {
-        if (itemInHand(player, ItemTypes.COMPASS)) {
-            teleportInDirection(player, 100) //todo: limit config
+        if (TeleportCompass.itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)) {
+            TeleportCompass.teleportInDirection(player, 100)
         }
-    }*/
+    }
 
     @Listener
     fun onRightClickBlock(event: InteractBlockEvent.Secondary, @First player: Player) {
-        if (!player.hasPermission(TELEPORT_PERMISSION)) {
-            player.sendMessage(PERMISSION_DENIED)
-            return
-        }
-        if (itemInHand(player, ItemTypes.COMPASS)
-                && event.targetBlock.location.isPresent) {
+        if (TeleportCompass.itemInHand(player, ItemTypes.COMPASS) && event.targetBlock.location.isPresent
+                && testTeleportPermission(player)) {
             teleportOnTopOfBlocks(player, event.targetBlock.location.get())
         }
     }
@@ -81,6 +77,17 @@ class TeleportCompass @Inject constructor(private val logger: Logger) {
             } while(!teleportLoc.blockType.equals(BlockTypes.AIR) //Check teleportLoc and one block above for air,
                     || !teleportLoc.add(0.0, 1.0, 0.0).blockType.equals(BlockTypes.AIR)) //so the player can be teleported there
             player.setLocationSafely(teleportLoc)
+        }
+
+        /**
+         * Sends a [PERMISSION_DENIED] message to [player] if he doesn't have [TELEPORT_PERMISSION].
+         * @return If the player has permission
+         */
+        fun testTeleportPermission(player: Player): Boolean {
+            return if (!player.hasPermission(TELEPORT_PERMISSION)) {
+                player.sendMessage(PERMISSION_DENIED)
+                false
+            } else true
         }
 
         /**
