@@ -79,7 +79,7 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
 
         const val NAME = "TeleportCompass"
         const val ID = "de.randombyte.teleportcompass"
-        const val VERSION = "v0.1.2"
+        const val VERSION = "v1.0"
         const val AUTHOR = "RandomByte"
 
         val TELEPORT_PERMISSION = "teleportcompass.use"
