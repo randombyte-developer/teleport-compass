@@ -11,10 +11,8 @@ import org.spongepowered.api.command.spec.CommandSpec
 import org.spongepowered.api.config.DefaultConfig
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
-import org.spongepowered.api.event.action.InteractEvent
 import org.spongepowered.api.event.block.InteractBlockEvent
 import org.spongepowered.api.event.filter.cause.First
-import org.spongepowered.api.event.filter.type.Exclude
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.item.ItemType
 import org.spongepowered.api.item.ItemTypes
@@ -61,17 +59,19 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
     }
 
     @Listener
-    @Exclude(InteractBlockEvent::class) //Seems not to work: https://github.com/SpongePowered/SpongeCommon/issues/643
-    fun onRightClickAir(event: InteractEvent, @First player: Player) {
-        if (itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)) {
-            teleportInDirection(player, maxTeleportDistance)
-        }
-    }
-
-    @Listener
-    fun onRightClickBlock(event: InteractBlockEvent.Secondary, @First player: Player) {
-        if (itemInHand(player, ItemTypes.COMPASS) && event.targetBlock.location.isPresent && testTeleportPermission(player)) {
-            teleportOnTopOfBlocks(player, event.targetBlock.location.get())
+    fun onInteractCompass(event: InteractBlockEvent, @First player: Player) {
+        if (teleportValid(player)) {
+            if (event.targetBlock.location.isPresent) {
+                //Interact with non air block
+                teleportOnTopOfBlocks(player, event.targetBlock.location.get())
+                if (event is InteractBlockEvent.Primary) {
+                    //Destroyed a block by left clicking, prevent that
+                    event.isCancelled = true
+                }
+            } else {
+                //Interact with air block
+                teleportInDirection(player, maxTeleportDistance)
+            }
         }
     }
 
@@ -86,6 +86,8 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
         val PERMISSION_DENIED = Text.of(TextColors.RED, "You don't have permission to teleport!")
 
         val DEFAULT_MAX_TELEPORT_DISTANCE = 100
+
+        fun teleportValid(player: Player) = itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)
 
         /**
          * Uses [BlockRay] to teleport the [player] in the direction he is looking at. [teleportLimit] limits how far the
