@@ -4,15 +4,14 @@ import com.google.inject.Inject
 import ninja.leaping.configurate.commented.CommentedConfigurationNode
 import ninja.leaping.configurate.loader.ConfigurationLoader
 import org.slf4j.Logger
-import org.spongepowered.api.Sponge
 import org.spongepowered.api.block.BlockTypes
-import org.spongepowered.api.command.CommandResult
-import org.spongepowered.api.command.spec.CommandSpec
 import org.spongepowered.api.config.DefaultConfig
+import org.spongepowered.api.data.type.HandTypes
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.block.InteractBlockEvent
 import org.spongepowered.api.event.filter.cause.First
+import org.spongepowered.api.event.game.GameReloadEvent
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.item.ItemType
 import org.spongepowered.api.item.ItemTypes
@@ -35,19 +34,13 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
-        Sponge.getCommandManager().register(this, CommandSpec.builder()
-            .child(CommandSpec.builder()
-                .executor { src, ctx ->
-                    loadConfig()
-                    src.sendMessage(Text.of(TextColors.GREEN, "TeleportCompass config reloaded!"))
-                    CommandResult.success()
-                }
-                .description(Text.of("Reloads the config"))
-                .build(), "reload")
-            .build(), "teleportCompass")
-
         loadConfig()
         logger.info("$NAME loaded: $VERSION!")
+    }
+
+    @Listener
+    fun onReload(event: GameReloadEvent) {
+        loadConfig()
     }
 
     fun loadConfig() {
@@ -62,14 +55,14 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
     fun onInteractCompass(event: InteractBlockEvent, @First player: Player) {
         if (teleportValid(player)) {
             if (event.targetBlock.location.isPresent) {
-                //Interact with non air block
+                // Interact with non air block
                 teleportOnTopOfBlocks(player, event.targetBlock.location.get())
                 if (event is InteractBlockEvent.Primary) {
-                    //Destroyed a block by left clicking, prevent that
+                    // Destroyed a block by left clicking, prevent that
                     event.isCancelled = true
                 }
             } else {
-                //Interact with air block
+                // Interact with air block
                 teleportInDirection(player, maxTeleportDistance)
             }
         }
@@ -78,8 +71,8 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
     companion object {
 
         const val NAME = "TeleportCompass"
-        const val ID = "de.randombyte.teleportcompass"
-        const val VERSION = "v1.0"
+        const val ID = "teleportcompass"
+        const val VERSION = "v1.1"
         const val AUTHOR = "RandomByte"
 
         val TELEPORT_PERMISSION = "teleportcompass.use"
@@ -87,14 +80,18 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
 
         val DEFAULT_MAX_TELEPORT_DISTANCE = 100
 
-        fun teleportValid(player: Player) = itemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)
+        fun teleportValid(player: Player) = isItemInHand(player, ItemTypes.COMPASS) && testTeleportPermission(player)
 
         /**
          * Uses [BlockRay] to teleport the [player] in the direction he is looking at. [teleportLimit] limits how far the
          * player can be teleported at most.
          */
         fun teleportInDirection(player: Player, teleportLimit: Int) {
-            val hitOpt = BlockRay.from(player).blockLimit(teleportLimit).filter(BlockRay.onlyAirFilter()).end()
+            val hitOpt = BlockRay.
+                    from(player)
+                    .distanceLimit(teleportLimit.toDouble())
+                    .stopFilter(BlockRay.continueAfterFilter(BlockRay.onlyAirFilter(), 1))
+                    .end()
             if (hitOpt.isPresent) {
                 player.setLocationSafely(hitOpt.get().location)
             } else {
@@ -109,8 +106,8 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
             var teleportLoc = block
             do {
                 teleportLoc = teleportLoc.add(0.0, 1.0, 0.0)
-            } while(!teleportLoc.blockType.equals(BlockTypes.AIR) //Check teleportLoc and one block above for air,
-                    || !teleportLoc.add(0.0, 1.0, 0.0).blockType.equals(BlockTypes.AIR)) //so the player can be teleported there
+            } while(teleportLoc.blockType != BlockTypes.AIR // Check teleportLoc and one block above for air,
+                    || teleportLoc.add(0.0, 1.0, 0.0).blockType != BlockTypes.AIR) // so the player can be teleported there
             player.setLocationSafely(teleportLoc)
         }
 
@@ -126,9 +123,9 @@ class TeleportCompass @Inject constructor(val logger: Logger) {
         }
 
         /**
-         * @return Whether the [player] has the [item] in hand
+         * @return Whether the [player] has the [itemType] in hand
          */
-        fun itemInHand(player: Player, item: ItemType): Boolean =
-                player.itemInHand.isPresent && player.itemInHand.get().item.equals(item)
+        fun isItemInHand(player: Player, itemType: ItemType): Boolean =
+                player.getItemInHand(HandTypes.MAIN_HAND).run { isPresent && get().item == itemType }
     }
 }
